@@ -4,6 +4,11 @@
   "ignore": [
     "**/.*",
     "node_modules",
-    "components"
-  ]
+    "bower_components"
+  ],
+  "dependencies": {
+    "jquery": "*",
+    "bootstrap": "*",
+    "spin.js":"*"
+  }
 }
