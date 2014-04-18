@@ -1,8 +1,16 @@
-body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+header {
+	background-image: url(http://pbsfm.org.au/themes/pbs/logo.png);
+	background-repeat: no-repeat;
+	height: 7em;
 }
 
-a {
-  color: #00B7FF;
+li.program {
+	display: inline-block;
+	vertical-align: top;
+	width: 12em;
+	height: 10em;
+	padding: 1em;
+}
+button.btn {
+	width:100%;
 }
