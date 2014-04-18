@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "postinstall": "bower install",
+    "postinstall": "./node_modules/bower/bin/bower install",
     "start": "node app"
   },
   "dependencies": {
@@ -16,6 +18,7 @@
     "grunt-contrib-watch": "~0.5.3",
     "request": "~2.27.0",
     "time-grunt": "~0.1.1",
-    "load-grunt-tasks": "~0.2.0"
+    "load-grunt-tasks": "~0.2.0",
+    "bower":"*"
   }
 }
