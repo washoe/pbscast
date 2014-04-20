@@ -39,7 +39,7 @@ exports.get = function(req, res){
 					episode.url = extractUrl(htmlString);
 					episode.link = root+'/'+programId+ AUDIO;
 					episode.description = extractDescription(htmlString);
-					episode.duration = 0;
+					episode.duration = '0';
 					//console.log('got ' + episode.name);
 				});
 				episodePromises.push(episodePromise);

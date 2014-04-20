@@ -1,5 +1,5 @@
-//main.js
-//(requires jQuery)
+// main.js - client code
+// (requires jQuery)
 
 
 $(document).ready(function(){
@@ -24,7 +24,7 @@ var parseProgramListHtml = function(htmlString) {
 	var $html = $(htmlString);
 	var selector = '.view-programs-active-list td';
 	var descriptionSelector = 'div.views-field-field-presenter-value span';
-	var emailSelector = 'a[href^="mailto:""]';
+	var emailSelector = 'a[href^="mailto:"]';
 	var $programList = $html.find(selector);
 	var result = [];
 	$programList.each(function() {
@@ -64,6 +64,7 @@ var renderPrograms = function(programList) {
 
 var generatePodCast = function(programData, $li) {
 	// TODO hand this off to node app
+	window.url = 'getpodcast/'+programData.href;//+ something?
 }
 
 /**
