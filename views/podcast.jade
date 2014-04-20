@@ -1,0 +1,26 @@
+rss(xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd", version="2.0")
+	channel
+		title= title
+		copyright
+		itunes:subtitle
+		itunes:author
+		description= description
+		itunes:summary
+		itunes:owner
+			itunes:name
+			itunes:email= email
+		language= language
+		link= link
+		image
+			itunes:image
+			title
+			url
+			link= link
+		for episode in items
+			item
+				title= episode.title
+				link
+				itunes:summary
+				pubDate
+				enclosure(url=episode.url)
+				guid
