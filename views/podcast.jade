@@ -19,7 +19,7 @@ rss(xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd", version="2.0")
 		for episode in items
 			item
 				title= episode.title
-				link
+				link= episode.link
 				itunes:summary
 				pubDate
 				enclosure(url=episode.url, duration=episode.duration)

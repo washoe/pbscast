@@ -27,6 +27,7 @@ exports.get = function(req, res){
 	httpGet(root, '/'+programId)
 		.then(function(htmlString) {
 			podcastResult = extractProgramDetails(htmlString);
+			podcastResult.items = [];
 		}).then (httpGet(root, '/'+programId+ AUDIO)
 		.then(function(htmlString){
 	        podcastResult.items = extractEpisodeData(htmlString);
@@ -41,14 +42,14 @@ exports.get = function(req, res){
 					episode.description = extractDescription(htmlString);
 					episode.duration = '0';
 					//console.log('got ' + episode.name);
+					return(episode);
 				});
 				episodePromises.push(episodePromise);
 			});
 			Q.all(episodePromises)
-				.then(function(result) {
+				.then(function(episodes) {
 					// all the episode promises have been fulfilled
-					console.log('all done');
-					//console.log(Q.isPromise(result[0]));// this is false = why??
+					console.log('got data for '+ episodes.length+ ' episodes');
 					podcastResult.language = 'en-au';
 					  res.render('podcast', podcastResult);// render into jade
 				});
@@ -62,7 +63,7 @@ exports.get = function(req, res){
 var httpGet = function(host, path) {
 	console.log('httpGet '+ path);
 	var deferred = Q.defer();
-	http.get({ host: root, path: path}, function(response) {
+	http.get({ host: root, path: path+'?'+new Date().getTime()}, function(response) {
 		var htmlString = '';
 	    if (response.statusCode === 302) {
 	        var newLocation = url.parse(response.headers.location).host;
@@ -80,7 +81,6 @@ var httpGet = function(host, path) {
     }).on('error', function(err) {
         console.log('Error %s', err.message);
     });
-	console.log('deferred '+ deferred);
     return deferred.promise;
 }
 

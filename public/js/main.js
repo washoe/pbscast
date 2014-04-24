@@ -7,12 +7,18 @@ $(document).ready(function(){
 });
 
 var getProgramList = function(callBack) {
-	var spinner = new Spinner().spin();
-	var $target = $('#programlist').append(spinner.el);
+	var spinner = new Spinner({
+		length:0,
+		width:16,
+		radius:30,
+		speed:0.5
+	}).spin();
+	var $target = $('#programlist').append(spinner.el).addClass('loading');
 	var pbsRoot = 'http://pbsfm.org.au';
 	var programListUrl = pbsRoot+'/programlist';
 	$.when(getXdomainUrl(programListUrl)).then (function(data) {
 		spinner.stop();
+		$target.removeClass('loading');
 		var programList = parseProgramListHtml(data.contents);
 		callBack(programList);
 	})
@@ -24,16 +30,13 @@ var parseProgramListHtml = function(htmlString) {
 	var $html = $(htmlString);
 	var selector = '.view-programs-active-list td';
 	var descriptionSelector = 'div.views-field-field-presenter-value span';
-	var emailSelector = 'a[href^="mailto:"]';
 	var $programList = $html.find(selector);
 	var result = [];
 	$programList.each(function() {
 		var programData = {};
 		programData.href = $(this).find('a').attr('href');
-		//programData.audioPageHref = (this).find('a').attr('href')+'/audio'; // for now, just the first page of audio links. TODO handle multiple pages
 		programData.name = $(this).find('a').html();
 		programData.description = $(this).find(descriptionSelector).html();
-		programData.email = $(this).find(emailSelector).html();
 		// only include if there is an href
 		if (undefined != programData.href) {
 			result.push(programData);
@@ -55,16 +58,16 @@ var renderPrograms = function(programList) {
 		var $titleAndLink = $('<a>').html(programData.name).attr('href', pbsRoot + programData.href).appendTo($li);
 		var $description = $('<div>').html(programData.description).appendTo($li);
 		var $generatePodcastButton = $('<button class="btn btn-default">').html('generate podcast').click(function() {
-			$(this).button('loading');
-			generatePodCast(programData, $li);
+			generatePodCast (programData);
 		}).appendTo($li);
 	})
 	$target.html($ul);
 }
 
-var generatePodCast = function(programData, $li) {
-	// TODO hand this off to node app
-	window.url = 'getpodcast/'+programData.href;//+ something?
+var generatePodCast = function(programData) {
+	// request podcast xml doc from server using itpc protocol
+	var getpodcastUrl = 'itpc://'+location.hostname+":"+location.port+'/getpodcast'+programData.href;
+	window.open(getpodcastUrl);
 }
 
 /**

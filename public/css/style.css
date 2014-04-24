@@ -1,3 +1,7 @@
+body {
+	font-family: Tahoma, Verdana, Arial, Helvetica, 'Bitstream Vera Sans', sans-serif;
+}
+
 header {
 	background-image: url(http://pbsfm.org.au/themes/pbs/logo.png);
 	background-repeat: no-repeat;
@@ -7,10 +11,28 @@ header {
 li.program {
 	display: inline-block;
 	vertical-align: top;
-	width: 12em;
-	height: 10em;
-	padding: 1em;
+	width: 13em;
+	margin: 0.5em;
+	background-color: #eee;
+	padding: 0.5em;
+	-webkit-box-shadow: 1px 1px 5px 0px rgba(50, 50, 50, 0.75);
+	-moz-box-shadow:    1px 1px 5px 0px rgba(50, 50, 50, 0.75);
+	-webkit-border-radius: 1em;
+	-moz-border-radius: 1em;
+	border-radius: 1em;
 }
+
+li.program div{
+	height: 6em;
+}
+
 button.btn {
 	width:100%;
+}
+
+div#programlist.loading {
+	width: 0em;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 10em;
 }
