@@ -22,12 +22,32 @@ li.program {
 	border-radius: 1em;
 }
 
-li.program div{
+li.program a {
+	color: #CC2229;
+}
+
+li.program div {
 	height: 6em;
 }
 
 button.btn {
-	width:100%;
+	width: 100%;
+	background-image: url("assets/podcast.png");
+	background-position: center left;
+	background-repeat: no-repeat;
+	padding: 8px;
+	background-position-x: 2px;
+	text-indent: 32px;
+	-webkit-border-radius: 1em;
+	-moz-border-radius: 1em;
+	border-radius: 1em;
+}
+
+.icon-podcast { 
+  background-image: url("assets/podcast.png");
+  background-position: center center; 
+  height: 32px; 
+  width: 32px;
 }
 
 div#programlist.loading {
