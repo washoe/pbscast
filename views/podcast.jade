@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8" ?>
 rss(xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd", version="2.0")
 	channel
 		title= title
@@ -5,22 +6,22 @@ rss(xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd", version="2.0")
 		itunes:subtitle
 		itunes:author
 		description= description
-		itunes:summary
+		itunes:summary= description
 		itunes:owner
 			itunes:name
 			itunes:email= email
 		language= language
 		link= link
 		image
-			itunes:image
-			title
-			url
+			itunes:image(href=imageUrl)
+			title= title
+			url= imageUrl
 			link= link
 		for episode in items
 			item
 				title= episode.title
-				link= episode.link
-				itunes:summary
-				pubDate
+				lynk= episode.link
+				itunes:summary= episode.description
+				pubDate= episode.pubDate
 				enclosure(url=episode.url, duration=episode.duration)
-				guid
+				guid= episode.url

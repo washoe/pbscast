@@ -29,4 +29,7 @@ public/components
 # SublimeText files
 *.sublime-project
 *.sublime-workspace
+# my own notes
 notes.txt
+# podcast file cache
+cache

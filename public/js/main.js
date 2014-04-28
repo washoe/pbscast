@@ -41,8 +41,6 @@ var parseProgramListHtml = function(htmlString) {
 		if (undefined != programData.href) {
 			result.push(programData);
 		}
-		
-		
 	});
 	return result;
 }
@@ -57,16 +55,18 @@ var renderPrograms = function(programList) {
 		var $li = $('<li>').attr('class', 'program').appendTo($ul);
 		var $titleAndLink = $('<a>').html(programData.name).attr('href', pbsRoot + programData.href).appendTo($li);
 		var $description = $('<div>').html(programData.description).appendTo($li);
-		var $generatePodcastButton = $('<button class="btn btn-default">').html('generate podcast').click(function() {
-			generatePodCast (programData);
+		var $getPodCastButton = $('<button class="btn btn-default">').html('subscribe').click(function() {
+			getPodCast (programData);
 		}).appendTo($li);
 	})
 	$target.html($ul);
 }
 
-var generatePodCast = function(programData) {
+var getPodCast = function(programData) {
 	// request podcast xml doc from server using itpc protocol
-	var getpodcastUrl = 'itpc://'+location.hostname+":"+location.port+'/getpodcast'+programData.href;
+	var protocol = 'itpc';
+	//protocol = 'http';// for testing
+	var getpodcastUrl = protocol + '://'+location.hostname+":"+location.port+'/getpodcast'+programData.href;
 	window.open(getpodcastUrl);
 }
 

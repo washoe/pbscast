@@ -10,7 +10,8 @@
     "express": "~3.3.4",
     "jade": "~0.34.0",
     "node-jquery":"*",
-    "q":"*"
+    "q":"*",
+    "hogan.js": "*"
   },
   "devDependencies": {
     "grunt": "~0.4.1",

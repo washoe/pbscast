@@ -12,7 +12,7 @@ li.program {
 	display: inline-block;
 	vertical-align: top;
 	width: 13em;
-	margin: 0.5em;
+	margin: 1em;
 	background-color: #eee;
 	padding: 0.5em;
 	-webkit-box-shadow: 1px 1px 5px 0px rgba(50, 50, 50, 0.75);
@@ -41,6 +41,8 @@ button.btn {
 	-webkit-border-radius: 1em;
 	-moz-border-radius: 1em;
 	border-radius: 1em;
+	font-size: 18px;
+	font-style: italic;
 }
 
 .icon-podcast { 

@@ -32,4 +32,6 @@ app.get('/getpodcast/:id', getpodcast.get);
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
+
+  getpodcast.getAll(); // for now, getting all podcasts on startup. TODO cron or similar to refresh every week.
 });
