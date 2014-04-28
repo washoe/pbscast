@@ -11,12 +11,11 @@ rss(xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd", version="2.0")
 			itunes:name
 			itunes:email= email
 		language= language
-		link= link
-		image
+		lynk= link
 			itunes:image(href=imageUrl)
 			title= title
 			url= imageUrl
-			link= link
+			lynk= link
 		for episode in items
 			item
 				title= episode.title
