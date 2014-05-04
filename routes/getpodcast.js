@@ -26,14 +26,20 @@ if (!fs.existsSync(SAVE_PATH)) {
 // handle request for podcast by serving up the appropriate xml file
 exports.get = function(req, res) {
 	var programId = req.params.id; // e.g. 'acrossthetracks'
-	var filePath = SAVE_PATH + programId + '.xml';
-	if (fs.existsSync(filePath)) {
-		res.sendfile(filePath);
+	var podcastData = retrievePodcast(programId); // data object
+	var xml = ''; // rendered xml
+	if (podcastData) {
+		xml = renderPodcast(podcastData);
 	}
 	else {
-		res.send('not found');
+		xml = 'not found';
 	}
+	res.send(xml);
 }
+
+
+
+
 
 // scrape program list and cache xml for all
 // http://stackoverflow.com/questions/18153410/how-to-use-q-all-with-complex-array-of-promises was some help
@@ -44,21 +50,23 @@ exports.getAll = function() {
 		var $html = $(htmlString);
 		var selector = '.view-programs-active-list td';
 		var descriptionSelector = 'div.views-field-field-presenter-value span';
-		var $programList = $html.find(selector);
+		var $programList = $html.find(selector).first();
 		var programData = [];
 		var programPromises = [];
 		$programList.each(function() {
 			var program = {};
 			program.href = $(this).find('a').attr('href');
+			program.id = program.href.replace(/^\/|\/$/g, '');// remove slash(es)
 			program.name = $(this).find('a').html();
 			program.description = $(this).find(descriptionSelector).html();
 			// only include if there is an href
 			if (undefined != program.href) {
 				programData.push(program);
-				var programPromise = getPodCast(program.href).then (function(xmlString) {
-					var podcastSavePath = SAVE_PATH + program.href+'.xml';
-					console.log('writing to '+podcastSavePath);
-					fs.writeFileSync(SAVE_PATH + program.href+'.xml', xmlString);
+				var programPromise = getPodCast(program.href).then (function(podcastData) {
+					console.log('programPromise '+ program.id);
+					persistPodcast(program.id, podcastData);
+
+
 				});
 			}
 		});
@@ -67,19 +75,56 @@ exports.getAll = function() {
 		})
 	})
 }
+var persistPodcast = function(programId, podcastData) {
+	console.log('persistPodcast ' + programId);
+	var podcastSavePath = SAVE_PATH + programId + '.json';
+	var podcastJson = JSON.stringify(podcastData);
+	console.log('*******');
+	console.log('writing to '+podcastSavePath);
+	fs.writeFileSync(podcastSavePath, podcastJson);
+}
 
 
-// assemble podcast for a given program. return promise that returns htmlString
+// retrieve podcast data
+var retrievePodcast = function(programId) {
+	var filePath = SAVE_PATH + programId + '.json';
+	if (fs.existsSync(filePath)) {
+		var podcastData = JSON.parse(fs.readFileSync(filePath));
+		return podcastData;
+	}
+	else {
+		return null;
+	}
+
+}
+
+
+
+// render podcast data as xml
+var renderPodcast = function(podcastData) {
+	var options = {pretty: true};
+	var jadeFunction = jade.compile(jadeTemplate, options);
+	var podCastString = jadeFunction(podcastData);
+	var podCastString = jadeFunction(podcastData);
+	podCastString = podCastString.replace(/lynk/g, 'link');
+	podCastString = podCastString.replace(/<guid>"/g, '<guid>');
+	podCastString = podCastString.replace(/"<\/guid>/g, '</guid>');
+	return podCastString;
+
+}
+
+
+// assemble podcast for a given program. return promise that returns rendered xml
 var getPodCast = function(programId) {
 	var deferred = Q.defer();
-	var podcastResult = {};
+	var podcastData = {};
 	var episodes;
 
 
 	console.log('getting audio for: '+PBS_HOST+programId);
 	httpGet(PBS_HOST, '/'+programId)
 		.then(function(htmlString) {
-			podcastResult = extractProgramDetails(htmlString);
+			podcastData = extractProgramDetails(htmlString);
 		}).then (httpGet(PBS_HOST, '/'+programId+ AUDIO)
 		.then(function(htmlString){
 	        episodes = extractEpisodeData(htmlString);
@@ -97,16 +142,9 @@ var getPodCast = function(programId) {
 			});
 			Q.all(episodePromises).then(function(episodeResults) {
 				// all the episode promises have been fulfilled
-				podcastResult.items = episodeResults;
-				podcastResult.language = 'en-au';
-				// TODO render Jade template
-				var options = {pretty: true};
-				var jadeFunction = jade.compile(jadeTemplate, options);
-				var podCastString = jadeFunction(podcastResult);
-				podCastString = podCastString.replace(/lynk/g, 'link');
-				podCastString = podCastString.replace(/<guid>"/g, '<guid>');
-				podCastString = podCastString.replace(/"<\/guid>/g, '</guid>');
-			    deferred.resolve(podCastString);
+				podcastData.items = episodeResults;
+				podcastData.language = 'en-au';
+			    deferred.resolve(podcastData);
 			});
 		}));
     return deferred.promise;
