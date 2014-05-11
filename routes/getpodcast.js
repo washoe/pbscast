@@ -3,54 +3,53 @@
  * GET podcast
  */
 
- var $ = require('node-jquery');
- var http = require('http');
- var Q = require('q');
- var jade = require('jade');
- var fs=require('fs');
-
- var PBS_HOST = 'pbsfm.org.au';
- var AUDIO = '/audio';
- var SAVE_PATH = './cache/';
- var TEMPLATE_PATH = './views/podcast.jade';
- var PROGRAM_LIST = '/programlist';
- var jadeTemplate = fs.readFileSync(TEMPLATE_PATH);
+var MONGO_URL = process.env.MONGOHQ_URL || 'mongodb://localhost:27017/pbscast'; // use local mongodb in dev
 
 
-// create cache folder
-if (!fs.existsSync(SAVE_PATH)) {
-	fs.mkdirSync(SAVE_PATH);
-}
+var $ = require('node-jquery');
+var http = require('http');
+var Q = require('q');
+var jade = require('jade');
+var fs = require('fs');
 
 
-// handle request for podcast by serving up the appropriate xml file
+
+var programDataCollection = require('monk')(MONGO_URL).get('programData');
+
+var PBS_HOST = 'pbsfm.org.au';
+var AUDIO = '/audio';
+var SAVE_PATH = './cache/';
+var TEMPLATE_PATH = './views/podcast.jade';
+var PROGRAM_LIST = '/programlist';
+var jadeTemplate = fs.readFileSync(TEMPLATE_PATH);
+
+
+// handle request for podcast by retrieving data, rendering xml an serving the result
 exports.get = function(req, res) {
 	var programId = req.params.id; // e.g. 'acrossthetracks'
 	var podcastData = retrievePodcast(programId); // data object
-	var xml = ''; // rendered xml
-	if (podcastData) {
-		xml = renderPodcast(podcastData);
-	}
-	else {
-		xml = 'not found';
-	}
-	res.send(xml);
+	retrievePodcast(programId).then(function(podcastData){
+		var xml = ''; // rendered xml
+		if (podcastData) {
+			xml = renderPodcast(podcastData);
+		}
+		else {
+			xml = 'not found';
+		}
+		res.send(xml);
+	})
 }
 
-
-
-
-
-// scrape program list and cache xml for all
+// scrape program list and persist in db
 // http://stackoverflow.com/questions/18153410/how-to-use-q-all-with-complex-array-of-promises was some help
-exports.getAll = function() {
-	console.log('getting all episodes ');
+exports.buildAll = function() {
+	console.log('building all podcasts');
 	httpGet(PBS_HOST, PROGRAM_LIST)
 	.then(function(htmlString){
 		var $html = $(htmlString);
 		var selector = '.view-programs-active-list td';
 		var descriptionSelector = 'div.views-field-field-presenter-value span';
-		var $programList = $html.find(selector).first();
+		var $programList = $html.find(selector);
 		var programData = [];
 		var programPromises = [];
 		$programList.each(function() {
@@ -62,40 +61,34 @@ exports.getAll = function() {
 			// only include if there is an href
 			if (undefined != program.href) {
 				programData.push(program);
-				var programPromise = getPodCast(program.href).then (function(podcastData) {
-					console.log('programPromise '+ program.id);
-					persistPodcast(program.id, podcastData);
-
-
+				var podcastPromise = getPodCast(program.href).then (function(podcastData) {
+					if (podcastData.items.length >0) {
+						persistPodcast(program.id, podcastData);
+					}
+					else {
+						console.info('no episodes found for '+program.id)
+					}
 				});
 			}
 		});
 		Q.all(programPromises).then(function(){
-			console.log('got all episodes ');
+			console.log('got all available podcasts ');
 		})
 	})
 }
-var persistPodcast = function(programId, podcastData) {
-	console.log('persistPodcast ' + programId);
-	var podcastSavePath = SAVE_PATH + programId + '.json';
-	var podcastJson = JSON.stringify(podcastData);
-	console.log('*******');
-	console.log('writing to '+podcastSavePath);
-	fs.writeFileSync(podcastSavePath, podcastJson);
-}
 
-
-// retrieve podcast data
-var retrievePodcast = function(programId) {
-	var filePath = SAVE_PATH + programId + '.json';
-	if (fs.existsSync(filePath)) {
-		var podcastData = JSON.parse(fs.readFileSync(filePath));
-		return podcastData;
-	}
-	else {
-		return null;
-	}
-
+// get all podcasts in db as array of objects
+exports.getIndex = function(req, res) {
+	var db = require('monk')(MONGO_URL);
+	db.get('programData').find({}, function(err, data) {
+		if (err) {
+			console.error('Error getting podcast data: '+err);
+		}
+		// render results into jade template
+		console.log('*********found podcast data')
+		console.log(data);
+		db.close;
+	});
 }
 
 
@@ -119,8 +112,6 @@ var getPodCast = function(programId) {
 	var deferred = Q.defer();
 	var podcastData = {};
 	var episodes;
-
-
 	console.log('getting audio for: '+PBS_HOST+programId);
 	httpGet(PBS_HOST, '/'+programId)
 		.then(function(htmlString) {
@@ -128,7 +119,7 @@ var getPodCast = function(programId) {
 		}).then (httpGet(PBS_HOST, '/'+programId+ AUDIO)
 		.then(function(htmlString){
 	        episodes = extractEpisodeData(htmlString);
-			console.log('extracted data for '+ episodes.length+ ' items');
+			console.log('extracted data for '+ episodes.length+ ' episodes of program '+programId);
 			var episodePromises = [];
 			episodes.forEach(function(episode) {
 				var episodePromise = httpGet(PBS_HOST, episode.pageUrl).then(function(htmlString) {
@@ -152,19 +143,18 @@ var getPodCast = function(programId) {
 
 
 // httpGetPromise - takes a host+path, returns a promise
-//adapted from http://veebdev.wordpress.com/2012/02/26/node-js-http-get-example-does-not-work-here-is-fix/
+// adapted from http://veebdev.wordpress.com/2012/02/26/node-js-http-get-example-does-not-work-here-is-fix/
 // promise stuff from http://runnable.com/Uld6VcWt6UEaAAHR/combine-promises-with-q-for-node-js
 var httpGet = function(host, path) {
-	//console.log('httpGet '+ path);
 	var deferred = Q.defer();
 	http.get({ host: PBS_HOST, path: path+'?'+new Date().getTime()}, function(response) {
 		var htmlString = '';
 	    if (response.statusCode === 302) {
 	        var newLocation = url.parse(response.headers.location).host;
-	        console.log('We have to make new request ' + newLocation);
+	        console.info('We have to make new request ' + newLocation);
 	        request(newLocation);
 	    } else {
-	        console.log("Response: %d", response.statusCode);
+	        console.info("Response: %d", response.statusCode);
 	        response.on('data', function(data) {
 	            htmlString += data;
 	        });
@@ -173,7 +163,7 @@ var httpGet = function(host, path) {
 	        });
 	    }
     }).on('error', function(err) {
-        console.log('Error %s', err.message);
+        console.error('Error %s', err.message);
     });
     return deferred.promise;
 }
@@ -194,9 +184,8 @@ var extractEpisodeData = function(htmlString) {
 	episodes.reverse();
 	return episodes;
 }
-/**
-* Extract the program details from the progrmam list page
-**/
+
+// Extract the program details from the progrmam list page
 var extractProgramDetails = function(htmlString) {
 	var result = {};
 	var emailSelector = 'a[href^="mailto:"]';
@@ -210,10 +199,46 @@ var extractProgramDetails = function(htmlString) {
 	return result;
 }
 
-/**
-* Extract the actual episode audio url from the page
-**/
+// Extract the actual episode audio url from the page
 var extractUrl = function(htmlString) {
 	var drupalSettings = JSON.parse(htmlString.split('jQuery.extend(Drupal.settings, ')[2].split(');')[0]); // extremely fragile way to get this info - a regExp would be better
 	return drupalSettings.jwplayer.files['jwplayer-2'].file;
+}
+
+
+// persist data in mongo db
+var persistPodcast = function(programId, podcastData) {
+	console.log('persistPodcast ' + programId);
+	var deferred = Q.defer();
+	var db = require('monk')(MONGO_URL);
+	var query = {programId:programId};
+	//update
+	db.get('programData').update(query, {programId:programId, podcastData:podcastData}, {upsert:true}).on('success', function(data) {
+		console.log('updated');
+		db.close();
+	    deferred.resolve(data);
+	}).on('error', function(err) {
+		console.error('error '+err);
+		db.close();
+	    deferred.resolve(null);
+	});
+    return deferred.promise;
+}
+
+
+
+// retrieve podcast data from mongo db
+var retrievePodcast = function(programId) {
+	var deferred = Q.defer();
+	var db = require('monk')(MONGO_URL);
+	var query = {programId:programId};
+	db.get('programData').findOne(query, function(err, data){
+		if (err) {
+			console.error('Error getting program data for '+programId+': '+err);//etc
+		};
+		console.log('success '+data);
+		db.close;
+	    deferred.resolve(data ? data.podcastData : null);
+	});
+    return deferred.promise;
 }
