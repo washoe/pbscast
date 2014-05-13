@@ -236,7 +236,7 @@ var retrievePodcast = function(programId) {
 		if (err) {
 			console.error('Error getting program data for '+programId+': '+err);//etc
 		};
-		console.log('success';
+		console.log('success');
 		db.close;
 	    deferred.resolve(data ? data.podcastData : null);
 	});

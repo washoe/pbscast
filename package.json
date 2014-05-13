@@ -9,10 +9,9 @@
   "dependencies": {
     "express": "~3.3.4",
     "jade": "~0.34.0",
-    "node-jquery":"*",
-    "q":"*",
-    "mongo":"*",
-    "monk":"*"
+    "node-jquery":"0.1.0",
+    "q":"1.0.1",
+    "monk":"0.8.1"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
