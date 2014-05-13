@@ -214,7 +214,7 @@ var persistPodcast = function(programId, podcastData) {
 	var query = {programId:programId};
 	//update
 	db.get('programData').update(query, {programId:programId, podcastData:podcastData}, {upsert:true}).on('success', function(data) {
-		console.log('updated');
+		console.log('success');
 		db.close();
 	    deferred.resolve(data);
 	}).on('error', function(err) {
@@ -236,7 +236,7 @@ var retrievePodcast = function(programId) {
 		if (err) {
 			console.error('Error getting program data for '+programId+': '+err);//etc
 		};
-		console.log('success '+data);
+		console.log('success';
 		db.close;
 	    deferred.resolve(data ? data.podcastData : null);
 	});
