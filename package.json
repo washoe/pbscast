@@ -11,7 +11,8 @@
     "jade": "~0.34.0",
     "node-jquery":"0.1.0",
     "q":"1.0.1",
-    "monk":"0.8.1"
+    "monk":"0.8.1",
+    "cron": "1.0.4"
   },
   "devDependencies": {
     "grunt": "~0.4.1",

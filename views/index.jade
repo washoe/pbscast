@@ -1,6 +1,13 @@
 extends layout
 
 block content
-  h1 The Unofficial PBS Podcast Page
-  p Click 'subscribe' to subscribe a podcast for the show of your choice.
-  div(id='programlist')
+	h1 The Unofficial PBS Podcast Page
+	p Click 'subscribe' to subscribe a podcast for the show of your choice.
+	div(id='programlist')
+		for program in programData
+			li(class='program')
+				a(href=pbsRoot+'/'+program.programId, target='_blank')
+					span(class="programtitle")= program.podcastData.title
+					img(src=program.podcastData.imageUrl)
+				span(class="programdesc")= program.podcastData.shortDescription
+				a(class='getpodcast btn btn-default', data-program-id=program.programId) subscribe

@@ -27,7 +27,6 @@ var jadeTemplate = fs.readFileSync(TEMPLATE_PATH);
 // handle request for podcast by retrieving data, rendering xml an serving the result
 exports.get = function(req, res) {
 	var programId = req.params.id; // e.g. 'acrossthetracks'
-	var podcastData = retrievePodcast(programId); // data object
 	retrievePodcast(programId).then(function(podcastData){
 		var xml = ''; // rendered xml
 		if (podcastData) {
@@ -50,7 +49,6 @@ exports.buildAll = function() {
 		var selector = '.view-programs-active-list td';
 		var descriptionSelector = 'div.views-field-field-presenter-value span';
 		var $programList = $html.find(selector);
-		var programData = [];
 		var programPromises = [];
 		$programList.each(function() {
 			var program = {};
@@ -60,8 +58,7 @@ exports.buildAll = function() {
 			program.description = $(this).find(descriptionSelector).html();
 			// only include if there is an href
 			if (undefined != program.href) {
-				programData.push(program);
-				var podcastPromise = getPodCast(program.href).then (function(podcastData) {
+				var podcastPromise = getPodCast(program).then (function(podcastData) {
 					if (podcastData.items.length >0) {
 						persistPodcast(program.id, podcastData);
 					}
@@ -91,24 +88,9 @@ exports.getIndex = function(req, res) {
 	});
 }
 
-
-
-// render podcast data as xml
-var renderPodcast = function(podcastData) {
-	var options = {pretty: true};
-	var jadeFunction = jade.compile(jadeTemplate, options);
-	var podCastString = jadeFunction(podcastData);
-	var podCastString = jadeFunction(podcastData);
-	podCastString = podCastString.replace(/lynk/g, 'link');
-	podCastString = podCastString.replace(/<guid>"/g, '<guid>');
-	podCastString = podCastString.replace(/"<\/guid>/g, '</guid>');
-	return podCastString;
-
-}
-
-
 // assemble podcast for a given program. return promise that returns rendered xml
-var getPodCast = function(programId) {
+var getPodCast = function(program) {
+	var programId = program.href;
 	var deferred = Q.defer();
 	var podcastData = {};
 	var episodes;
@@ -116,6 +98,8 @@ var getPodCast = function(programId) {
 	httpGet(PBS_HOST, '/'+programId)
 		.then(function(htmlString) {
 			podcastData = extractProgramDetails(htmlString);
+			podcastData.language = 'en-au';
+			podcastData.shortDescription = program.description; // short description to be used on index page
 		}).then (httpGet(PBS_HOST, '/'+programId+ AUDIO)
 		.then(function(htmlString){
 	        episodes = extractEpisodeData(htmlString);
@@ -134,37 +118,9 @@ var getPodCast = function(programId) {
 			Q.all(episodePromises).then(function(episodeResults) {
 				// all the episode promises have been fulfilled
 				podcastData.items = episodeResults;
-				podcastData.language = 'en-au';
 			    deferred.resolve(podcastData);
 			});
 		}));
-    return deferred.promise;
-}
-
-
-// httpGetPromise - takes a host+path, returns a promise
-// adapted from http://veebdev.wordpress.com/2012/02/26/node-js-http-get-example-does-not-work-here-is-fix/
-// promise stuff from http://runnable.com/Uld6VcWt6UEaAAHR/combine-promises-with-q-for-node-js
-var httpGet = function(host, path) {
-	var deferred = Q.defer();
-	http.get({ host: PBS_HOST, path: path+'?'+new Date().getTime()}, function(response) {
-		var htmlString = '';
-	    if (response.statusCode === 302) {
-	        var newLocation = url.parse(response.headers.location).host;
-	        console.info('We have to make new request ' + newLocation);
-	        request(newLocation);
-	    } else {
-	        console.info("Response: %d", response.statusCode);
-	        response.on('data', function(data) {
-	            htmlString += data;
-	        });
-	        response.on('end', function() {
-			    deferred.resolve(htmlString);
-	        });
-	    }
-    }).on('error', function(err) {
-        console.error('Error %s', err.message);
-    });
     return deferred.promise;
 }
 
@@ -203,6 +159,49 @@ var extractProgramDetails = function(htmlString) {
 var extractUrl = function(htmlString) {
 	var drupalSettings = JSON.parse(htmlString.split('jQuery.extend(Drupal.settings, ')[2].split(');')[0]); // extremely fragile way to get this info - a regExp would be better
 	return drupalSettings.jwplayer.files['jwplayer-2'].file;
+}
+
+
+
+// httpGetPromise - takes a host+path, returns a promise
+// adapted from http://veebdev.wordpress.com/2012/02/26/node-js-http-get-example-does-not-work-here-is-fix/
+// promise stuff from http://runnable.com/Uld6VcWt6UEaAAHR/combine-promises-with-q-for-node-js
+var httpGet = function(host, path) {
+	var deferred = Q.defer();
+	http.get({ host: PBS_HOST, path: path+'?'+new Date().getTime()}, function(response) {
+		var htmlString = '';
+	    if (response.statusCode === 302) {
+	        var newLocation = url.parse(response.headers.location).host;
+	        console.info('We have to make new request ' + newLocation);
+	        request(newLocation);
+	    } else {
+	        console.info("Response: %d", response.statusCode);
+	        response.on('data', function(data) {
+	            htmlString += data;
+	        });
+	        response.on('end', function() {
+			    deferred.resolve(htmlString);
+	        });
+	    }
+    }).on('error', function(err) {
+        console.error('Error %s', err.message);
+    });
+    return deferred.promise;
+}
+
+
+
+// render podcast data as xml
+var renderPodcast = function(podcastData) {
+	var options = {pretty: true};
+	var jadeFunction = jade.compile(jadeTemplate, options);
+	var podCastString = jadeFunction(podcastData);
+	var podCastString = jadeFunction(podcastData);
+	podCastString = podCastString.replace(/lynk/g, 'link');
+	podCastString = podCastString.replace(/<guid>"/g, '<guid>');
+	podCastString = podCastString.replace(/"<\/guid>/g, '</guid>');
+	return podCastString;
+
 }
 
 

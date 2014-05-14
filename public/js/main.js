@@ -3,7 +3,13 @@
 
 
 $(document).ready(function(){
-	getProgramList(function(data){renderPrograms(data)})
+	$('#programlist a.getpodcast').click(function(event){
+		// request podcast xml doc from server using itpc protocol
+		var protocol = 'itpc';
+		//protocol = 'http';// for testing
+		var getpodcastUrl = protocol + '://'+location.hostname+":"+location.port+'/getpodcast/'+$(event.target).data('programId');
+		window.open(getpodcastUrl);
+	})
 });
 
 var getProgramList = function(callBack) {
@@ -68,12 +74,4 @@ var getPodCast = function(programData) {
 	//protocol = 'http';// for testing
 	var getpodcastUrl = protocol + '://'+location.hostname+":"+location.port+'/getpodcast'+programData.href;
 	window.open(getpodcastUrl);
-}
-
-/**
-* use whateverorigin to circumvent xdomain restrictions
-**/
-var getXdomainUrl = function(url, callBack){
-		// whateverorigin circumvents xdomain restrictions
-	return $.getJSON('http://whateverorigin.org/get?url=' + encodeURIComponent(url) + '&callback=?');
 }
